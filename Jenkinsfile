@@ -7,16 +7,18 @@ pipeline {
          }
     stages {
        
-        stage('Last stage') {
-            steps {
-                // Example build command, adjust as needed
-                echo 'ok'
-            }
-        }
+       
 
       stage('Build') {
             steps {
                 sh 'go version'
+            }
+        }
+
+       stage('Last stage') {
+            steps {
+                // Example build command, adjust as needed
+                echo 'END'
             }
         }
     }
