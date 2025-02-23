@@ -88,13 +88,14 @@ pipeline {
                     sourceFile: "${env.WORKSPACE}/gitea-archive-${GIT_TAG}.tar.gz",  // Use versioned file
                     storageClass: 'STANDARD', 
                     uploadFromSlave: false, 
-                    useServerSideEncryption: false
+                    useServerSideEncryption: false,
+                    pluginFailureResultConstraint: 'FAILURE', 
+                    profileName: 's3-jenkins-ansible-user', 
+                    userMetadata: [[key: '', value: '']]
                 ]]
 
                 // Add the pluginFailureResultConstraint, profileName, and userMetadata as separate blocks
-                pluginFailureResultConstraint: 'FAILURE', 
-                profileName: 's3-jenkins-ansible-user', 
-                userMetadata: [[key: '', value: '']]
+               
             }
         }
     }
