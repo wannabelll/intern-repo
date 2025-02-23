@@ -71,33 +71,7 @@ pipeline {
             }
         }
 
-        // Publish the versioned artifact to S3
-        stage('Publish to Remote Server') {
-            steps {
-                // Upload the versioned artifact to S3
-                s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false, entries: [[
-                    bucket: "my-artifact-bucket-ue-north-1/${JOB_NAME}-${BUILD_NUMBER}",
-                    excludedFile: '', 
-                    flatten: false, 
-                    gzipFiles: false, 
-                    keepForever: false, 
-                    managedArtifacts: false, 
-                    noUploadOnFailure: true, 
-                    selectedRegion: 'us-east-1', 
-                    showDirectlyInBrowser: false, 
-                    sourceFile: "${env.WORKSPACE}/gitea-archive-${GIT_TAG}.tar.gz",  // Use versioned file
-                    storageClass: 'STANDARD', 
-                    uploadFromSlave: false, 
-                    useServerSideEncryption: false,
-                    pluginFailureResultConstraint: 'FAILURE', 
-                    profileName: 's3-jenkins-ansible-user', 
-                    userMetadata: [[key: '', value: '']]
-                ]]
-
-                // Add the pluginFailureResultConstraint, profileName, and userMetadata as separate blocks
-               
-            }
-        }
+      s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'my-artifact-bucket-ue-north-1/${JOB_NAME}-${BUILD_NUMBER}', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: true, selectedRegion: 'eu-north-1', showDirectlyInBrowser: false, sourceFile: 'gitea-archive-${GIT_TAG}.tar.gz', storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE', profileName: ' s3-jenkins-ansible-user ', userMetadata: [[key: '', value: '']]
     }
 
     post {
