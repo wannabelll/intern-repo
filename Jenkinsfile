@@ -7,7 +7,10 @@ pipeline {
         // Get the latest Git tag for versioning
         GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
     }
-
+    tools{
+        nodejs "node-23.8.0-from.org"
+        go '1.24.0'
+    }
     stages {
 
         // Install npm dependencies
@@ -71,7 +74,43 @@ pipeline {
             }
         }
 
-      s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'my-artifact-bucket-ue-north-1/${JOB_NAME}-${BUILD_NUMBER}', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: true, selectedRegion: 'eu-north-1', showDirectlyInBrowser: false, sourceFile: 'gitea-archive-${GIT_TAG}.tar.gz', storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], pluginFailureResultConstraint: 'FAILURE', profileName: ' s3-jenkins-ansible-user ', userMetadata: [[key: '', value: '']]
+        // Publish the versioned artifact to S3
+       stage('Upload to S3') {
+            steps {
+                script {
+                    // Upload artifact to S3 using declarative pipeline syntax
+                    s3Upload(
+                        bucket: 'my-artifact-bucket-ue-north-1/${JOB_NAME}-${BUILD_NUMBER}',
+                        sourceFile: "gitea-archive-${GIT_TAG}.tar.gz",
+                        storageClass: 'STANDARD',
+                        selectedRegion: 'eu-north-1',
+                        gzipFiles: false,
+                        flatten: false,
+                        showDirectlyInBrowser: false,
+                        noUploadOnFailure: true,
+                        useServerSideEncryption: false,
+                        keepForever: false,
+                        managedArtifacts: false,
+                        entries: [[
+                            sourceFile: "gitea-archive-${GIT_TAG}.tar.gz",
+                            bucket: "my-artifact-bucket-ue-north-1/${JOB_NAME}-${BUILD_NUMBER}",
+                            excludedFile: "",
+                            flatten: false,
+                            gzipFiles: false,
+                            keepForever: false,
+                            managedArtifacts: false,
+                            noUploadOnFailure: true,
+                            selectedRegion: 'eu-north-1',
+                            showDirectlyInBrowser: false,
+                            storageClass: 'STANDARD',
+                            useServerSideEncryption: false
+                        ]],
+                        profileName: 's3-jenkins-ansible-user',  // The profile configured for AWS CLI on Jenkins
+                        pluginFailureResultConstraint: 'FAILURE'
+                    )
+                }
+            }
+        }
     }
 
     post {
@@ -83,4 +122,3 @@ pipeline {
         }
     }
 }
-
