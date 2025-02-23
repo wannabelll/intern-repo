@@ -1,4 +1,4 @@
-pipeline {
+  pipeline {
     agent {
         label "default-1"
     }
@@ -7,10 +7,7 @@ pipeline {
         // Get the latest Git tag for versioning
         GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
     }
-    tools{
-        nodejs "node-23.8.0-from.org"
-        go '1.24.0'
-    }
+
     stages {
 
         // Install npm dependencies
@@ -75,7 +72,7 @@ pipeline {
         }
 
         // Publish the versioned artifact to S3
-        stage('Publish to Remote Server(S3)') {
+        stage('Publish to Remote Server') {
             steps {
                 // Upload the versioned artifact to S3
                 s3Upload consoleLogLevel: 'INFO', dontSetBuildResultOnFailure: false, dontWaitForConcurrentBuildCompletion: false, entries: [[
@@ -88,15 +85,31 @@ pipeline {
                     noUploadOnFailure: true, 
                     selectedRegion: 'us-east-1', 
                     showDirectlyInBrowser: false, 
-                    sourceFile: "gitea-archive-${GIT_TAG}.tar.gz",  // Use versioned file
+                    sourceFile: "$gitea-archive-${GIT_TAG}.tar.gz",  // Use versioned file
                     storageClass: 'STANDARD', 
                     uploadFromSlave: false, 
                     useServerSideEncryption: false
                 ]]
+
+                pluginFailureResultConstraint: 'FAILURE', 
+                profileName: 's3-jenkins-ansible-user', 
+                userMetadata: [[key: '', value: '']]
             }
         }
     }
 
+    post {
+        success {
+            echo "Release ${GIT_TAG} has been successfully uploaded to S3."
+        }
+        failure {
+            echo "Pipeline failed. Check the logs for more details."
+        }
+    }
+}
+
+
+  
     post {
         success {
             echo "Release ${GIT_TAG} has been successfully uploaded to S3."
