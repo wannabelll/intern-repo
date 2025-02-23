@@ -1,4 +1,4 @@
-  pipeline {
+pipeline {
     agent {
         label "default-1"
     }
@@ -85,12 +85,13 @@
                     noUploadOnFailure: true, 
                     selectedRegion: 'us-east-1', 
                     showDirectlyInBrowser: false, 
-                    sourceFile: "$gitea-archive-${GIT_TAG}.tar.gz",  // Use versioned file
+                    sourceFile: "${env.WORKSPACE}/gitea-archive-${GIT_TAG}.tar.gz",  // Use versioned file
                     storageClass: 'STANDARD', 
                     uploadFromSlave: false, 
                     useServerSideEncryption: false
                 ]]
 
+                // Add the pluginFailureResultConstraint, profileName, and userMetadata as separate blocks
                 pluginFailureResultConstraint: 'FAILURE', 
                 profileName: 's3-jenkins-ansible-user', 
                 userMetadata: [[key: '', value: '']]
@@ -108,14 +109,3 @@
     }
 }
 
-
-  
-    post {
-        success {
-            echo "Release ${GIT_TAG} has been successfully uploaded to S3."
-        }
-        failure {
-            echo "Pipeline failed. Check the logs for more details."
-        }
-    }
-}
