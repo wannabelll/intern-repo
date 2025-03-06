@@ -31,7 +31,7 @@ pipeline {
             }
         }
 
-        // Run Go mod tidy and build the Go binary with minimized size
+        // Run Go mod tidy and build the Go binary with minimized size..
         stage('Go Build') {
             steps {
                 script {
