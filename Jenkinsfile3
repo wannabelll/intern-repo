@@ -8,7 +8,7 @@ pipeline {
         GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
         GITHUB_TOKEN = credentials('jenkins-github-integration-demo.2025-03-06.private-key.pem')
         REPO_URL = 'https://github.com/wannabelll/intern-repo.git'
-        ZIP_NAME = "gitea-archive-${GIT_TAG}.tar.gz"  // tar.gz file name based on tag
+        ZIP_NAME = "gitea-archive-${GIT_TAG}.tar.gz"  // tar.gz file name based ontag
     }
 
     tools {
