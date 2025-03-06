@@ -1,51 +1,61 @@
 pipeline {
-    agent {
-        label "w-1"
-    }
+    agent any
 
     environment {
-        // Get the latest Git tag for versioning
-        GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
+        GIT_TAG = ''
         GITHUB_TOKEN = credentials('jenkins-github-integration-demo.2025-03-06.private-key.pem')
-        REPO_URL = 'https://github.com/wannabelll/intern-repo.git'
-        ZIP_NAME = "gitea-archive-${GIT_TAG}.tar.gz"  // tar.gz file name based ontag
-    }
-
-    tools {
-        go '1.24.0'
+        REPO_URL = 'https://github.com/your-username/your-repository.git'
+        ZIP_NAME = ''
     }
 
     stages {
-        // Run Go Build
+        stage('Checkout') {
+            steps {
+                script {
+                    // Explicitly fetch tags before using them
+                    sh 'git fetch --tags'
+                }
+            }
+        }
+
+        stage('Get Git Tag') {
+            steps {
+                script {
+                    // Attempt to get the latest Git tag, or fallback to commit hash if no tags exist
+                    GIT_TAG = sh(script: "git describe --tags --abbrev=0 || git rev-parse --short HEAD", returnStdout: true).trim()
+                    echo "Using tag: ${GIT_TAG}"
+                }
+            }
+        }
+
         stage('Go Build') {
             steps {
                 script {
-                    // Build the Go binary, using flags to reduce binary size
+                    // Build the Go binary with flags to reduce its size
                     sh 'go build -ldflags="-s -w" -o gitea'
                 }
             }
         }
 
-        // Create a tar.gz archive of your project
         stage('Create TAR Archive') {
             steps {
                 script {
-                    // Define the files to include relative to the workspace
+                    // Define the files to include in the archive
                     def filesToInclude = [
-                        "web_src/",
-                        "templates/",
-                        "models/",
-                        "public/",
-                        "options/",
-                        "node_modules/",
-                        "modules/",
+                        "web_src/",   
+                        "templates/", 
+                        "models/", 
+                        "public/", 
+                        "options/", 
+                        "node_modules/", 
+                        "modules/", 
                         "gitea",  // The built Go binary
-                        "custom/"
+                        "custom/"     
                     ]
 
                     // Build the tar command dynamically, using -C to avoid absolute paths
-                    def tarCommand = "tar -czf ${ZIP_NAME} -C $WORKSPACE "
-                    filesToInclude.each { file ->
+                    def tarCommand = "tar -czf gitea-archive-${GIT_TAG}.tar.gz -C $WORKSPACE "
+                    filesToInclude.each { file -> 
                         tarCommand += "${file} "
                     }
 
@@ -55,7 +65,6 @@ pipeline {
             }
         }
 
-        // Create GitHub Release and Upload the tar.gz
         stage('Create GitHub Release') {
             when { branch 'main' }
             steps {
@@ -77,7 +86,7 @@ pipeline {
                         sh """
                         gh release create \
                             ${GIT_TAG} \
-                            ${ZIP_NAME} \
+                            gitea-archive-${GIT_TAG}.tar.gz \
                             --repo ${REPO_URL} \
                             --generate-notes
                         """
