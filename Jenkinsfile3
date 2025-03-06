@@ -6,47 +6,46 @@ pipeline {
     environment {
         // Get the latest Git tag for versioning
         GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
-        GITHUB_TOKEN = credentials('jenkins-github-integration-demo.2025-03-06.private-key.pem') // Replace with your GitHub Token
-        GITHUB_REPO = 'https://github.com/wannabelll/intern-repo.git'  // Set your GitHub repository here
-        RELEASE_NAME = "Release-${GIT_TAG}"  // Customize your release name
-        RELEASE_BODY = "Release for version ${GIT_TAG}"
-        ASSET_TAR_GZ = "gitea-archive-${GIT_TAG}.tar.gz"  // Path to your .tar.gz file
+        GITHUB_TOKEN = credentials('jenkins-github-integration-demo.2025-03-06.private-key.pem')
+        REPO_URL = 'https://github.com/wannabelll/intern-repo.git'
+        ZIP_NAME = "gitea-archive-${GIT_TAG}.tar.gz"  // tar.gz file name based on tag
     }
+
     tools {
         go '1.24.0'
     }
+
     stages {
+        // Run Go Build
         stage('Go Build') {
             steps {
                 script {
-                    // Run Go mod tidy to clean up any dependencies
-                    sh 'go mod tidy'
-
                     // Build the Go binary, using flags to reduce binary size
                     sh 'go build -ldflags="-s -w" -o gitea'
                 }
             }
         }
 
+        // Create a tar.gz archive of your project
         stage('Create TAR Archive') {
             steps {
                 script {
                     // Define the files to include relative to the workspace
                     def filesToInclude = [
-                        "web_src/",   
-                        "templates/", 
-                        "models/", 
-                        "public/", 
-                        "options/", 
-                        "node_modules/", 
-                        "modules/", 
+                        "web_src/",
+                        "templates/",
+                        "models/",
+                        "public/",
+                        "options/",
+                        "node_modules/",
+                        "modules/",
                         "gitea",  // The built Go binary
-                        "custom/"     
+                        "custom/"
                     ]
 
                     // Build the tar command dynamically, using -C to avoid absolute paths
-                    def tarCommand = "tar -czf ${ASSET_TAR_GZ} -C $WORKSPACE "
-                    filesToInclude.each { file -> 
+                    def tarCommand = "tar -czf ${ZIP_NAME} -C $WORKSPACE "
+                    filesToInclude.each { file ->
                         tarCommand += "${file} "
                     }
 
@@ -56,129 +55,33 @@ pipeline {
             }
         }
 
-        stage('Create GitHub Release and Upload Artifact') {
+        // Create GitHub Release and Upload the tar.gz
+        stage('Create GitHub Release') {
+            when { branch 'main' }
             steps {
                 script {
-                    // Step 1: Create a GitHub Release
-                    def createRelease = sh(script: """
-                        curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-                        -d '{
-                            "tag_name": "${GIT_TAG}",
-                            "name": "${RELEASE_NAME}",
-                            "body": "${RELEASE_BODY}",
-                            "draft": false,
-                            "prerelease": false
-                        }' \
-                        https://api.github.com/repos/${GITHUB_REPO}/releases
-                    """, returnStdout: true).trim()
+                    echo 'Checking if GitHub Release already exists...'
 
-                    // Parse the response to get the release ID
-                    def releaseData = readJSON text: createRelease
-                    def releaseId = releaseData.id
-                    echo "Release created with ID: ${releaseId}"
+                    // Check if the release already exists using GitHub CLI
+                    def releaseExists = sh(
+                        script: "gh release view ${GIT_TAG} --repo ${REPO_URL} > /dev/null 2>&1",
+                        returnStatus: true
+                    ) == 0
 
-                    // Step 2: Upload the .tar.gz file to the GitHub Release
-                    def uploadArtifact = sh(script: """
-                        curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-                        -H "Content-Type: application/octet-stpipeline {
-    agent {
-        label "w-1"
-    }
-
-    environment {
-        // Get the latest Git tag for versioning
-        GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
-        GITHUB_TOKEN = credentials('jenkins-github-integration-demo.2025-03-06.private-key.pem') // Replace with your GitHub Token
-        GITHUB_REPO = 'https://github.com/wannabelll/intern-repo.git'  // Set your GitHub repository her
-        RELEASE_NAME = "Release-${GIT_TAG}"  // Customize your release name
-        RELEASE_BODY = "Release for version ${GIT_TAG}"
-        ASSET_TAR_GZ = "gitea-archive-${GIT_TAG}.tar.gz"  // Path to your .tar.gz file
-    }
-    tools {
-        go '1.24.0'
-    }
-    stages {
-        stage('Go Build') {
-            steps {
-                script {
-                    // Run Go mod tidy to clean up any dependencies
-                    sh 'go mod tidy'
-
-                    // Build the Go binary, using flags to reduce binary size
-                    sh 'go build -ldflags="-s -w" -o gitea'
-                }
-            }
-        }
-
-        stage('Create TAR Archive') {
-            steps {
-                script {
-                    // Define the files to include relative to the workspace
-                    def filesToInclude = [
-                        "web_src/",   
-                        "templates/", 
-                        "models/", 
-                        "public/", 
-                        "options/", 
-                        "node_modules/", 
-                        "modules/", 
-                        "gitea",  // The built Go binary
-                        "custom/"     
-                    ]
-
-                    // Build the tar command dynamically, using -C to avoid absolute paths
-                    def tarCommand = "tar -czf ${ASSET_TAR_GZ} -C $WORKSPACE "
-                    filesToInclude.each { file -> 
-                        tarCommand += "${file} "
+                    if (releaseExists) {
+                        echo "Release ${GIT_TAG} already exists. Skipping release creation."
+                    } else {
+                        echo 'Creating GitHub Release...'
+                        
+                        // Create the GitHub release and upload the tar.gz file
+                        sh """
+                        gh release create \
+                            ${GIT_TAG} \
+                            ${ZIP_NAME} \
+                            --repo ${REPO_URL} \
+                            --generate-notes
+                        """
                     }
-
-                    // Run the tar command
-                    sh tarCommand
-                }
-            }
-        }
-
-        stage('Create GitHub Release and Upload Artifact') {
-    steps {
-        script {
-            // Step 1: Create a GitHub Release
-            def createRelease = sh(script: """
-                curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-                -d '{
-                    "tag_name": "${GIT_TAG}",
-                    "name": "${RELEASE_NAME}",
-                    "body": "${RELEASE_BODY}",
-                    "draft": false,
-                    "prerelease": false
-                }' \
-                https://api.github.com/repos/${GITHUB_REPO}/releases
-            """, returnStdout: true).trim()
-
-            // Parse the response to get the release ID
-            def releaseData = readJSON text: createRelease
-            def releaseId = releaseData.id
-            echo "Release created with ID: ${releaseId}"
-
-            // Step 2: Upload the .tar.gz file to the GitHub Release
-            def uploadArtifact = sh(script: """
-                curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-                -H "Content-Type: application/octet-stream" \
-                --data-binary @${ASSET_TAR_GZ} \
-                "https://uploads.github.com/repos/${GITHUB_REPO}/releases/${releaseId}/assets?name=${ASSET_TAR_GZ}"
-            """, returnStdout: true).trim()
-
-            echo "Uploaded artifact: ${uploadArtifact}"
-        }
-    }
-}
-
-}
-ream" \
-                        --data-binary @${ASSET_TAR_GZ} \
-                        "https://uploads.github.com/repos/${GITHUB_REPO}/releases/${releaseId}/assets?name=$(basename ${ASSET_TAR_GZ})"
-                    """, returnStdout: true).trim()
-
-                    echo "Uploaded artifact: ${uploadArtifact}"
                 }
             }
         }
