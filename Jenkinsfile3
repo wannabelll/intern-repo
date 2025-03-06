@@ -34,15 +34,7 @@ go '1.24.0'
             }
         }
 
-        stage('Go Build') {
-            steps {
-                script {
-                    // Build the Go binary with flags to reduce its size
-                    sh 'go build -ldflags="-s -w" -o gitea'
-                }
-            }
-        }
-
+        
         stage('Create TAR Archive') {
             steps {
                 script {
@@ -53,7 +45,6 @@ go '1.24.0'
                         "models/", 
                         "public/", 
                         "options/", 
-                        "node_modules/", 
                         "modules/", 
                         "gitea",  // The built Go binary
                         "custom/"     
