@@ -1,18 +1,19 @@
 pipeline {
     agent {
-        label "default-1"
+        label "default-1" // The label corresponds to your worker node
     }
 
     environment {
         // Get the latest Git tag for versioning
         GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
     }
-    tools{
-        nodejs "node-23.8.0-from.org"
-        go '1.24.0'
+    
+    tools {
+        nodejs "node-23.8.0-from.org" // Specify the NodeJS version
+        go '1.24.0' // Specify the Go version to use in the pipeline
     }
-    stages {
 
+    stages {
         // Install npm dependencies
         stage('NPM Install') {
             steps {
@@ -75,7 +76,7 @@ pipeline {
         }
 
         // Publish the versioned artifact to S3
-       stage('Upload to S3') {
+        stage('Upload to S3') {
             steps {
                 script {
                     // Upload artifact to S3 using declarative pipeline syntax
