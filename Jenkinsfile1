@@ -1,0 +1,71 @@
+pipeline {
+    agent {
+        label "default-1"  // The label corresponds to your worker node
+    }    
+    tools {
+        go '1.24.0'  // Specify the Go version to use in the pipeline
+        nodejs "node-23.8.0-from.org"  // Specify the NodeJS version for the pipeline
+    }
+    environment {
+        GOPATH = "$HOME/go"  // Define GOPATH explicitly (if not set by default)
+        PATH = "$GOPATH/bin:$PATH"  // Add GOPATH/bin to PATH
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'go version'  // Ensure Go is installed and check version
+            }
+        }
+
+        stage('Lint Go Code') {
+            steps {
+                // Install and run golangci-lint
+                sh 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest'  // Install golangci-lint
+                sh 'golangci-lint run'  // Run golangci-lint on all Go files
+            }
+        }
+
+        stage('Run Go Unit Tests') {
+            steps {
+                // Run unit tests for Go code
+                sh 'go test ./... -v'  // Run all Go unit tests in the current directory and subdirectories
+            }
+        }
+
+        stage('Run Fuzz Test') {
+            steps {
+                // Run the fuzz test for Go code
+                sh 'go test -fuzz=FuzzMarkdownRenderRaw -fuzztime=10s ./tests/fuzz/'
+            }
+        }
+
+        stage('Run End-to-End Tests') {
+            steps {
+                // Run e2e tests (if any test logic is inside e2e directory or tests)
+                sh 'go test ./e2e/... -v'  // Run all Go tests in the e2e directory
+            }
+        }
+
+        stage('Run Integration Tests') {
+            steps {
+                // Run integration tests (if any test logic is inside integration directory or tests)
+                sh 'go test ./integration/... -v'  // Run all Go tests in the integration directory
+            }
+        }
+
+        stage('Run Vitest Tests') { 
+            steps {
+                // Run unit tests for JavaScript code (Vitest)
+                sh 'npx vitest run'
+                echo 'END'
+            }
+        }
+
+        stage('Update Test Fixtures') {
+            steps {
+                // Optionally, add steps to update or check test data
+                sh 'go test ./testdata/data/... -v'  // Run tests in the testdata directory
+            }
+        }
+    }
+}
