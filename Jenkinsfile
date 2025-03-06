@@ -13,29 +13,28 @@ pipeline {
     }
 
     stages {
+        // Stage for preparing environment and running tests
         stage('Run Tests') {
-          
-            parallel {
-                stage('Run Fuzz Test') {
-                  script {
-                            sh 'go mod tidy'
-                        
-                        }
-                    steps {
-                        // Run the fuzz  test
-                        sh 'go test -fuzz=FuzzMarkdownRenderRaw -fuzztime=10s ./tests/fuzz/'
-                    }
-                }
+            steps {
+                script {
+                    // Ensure dependencies are up to date before testing and linting
+                    sh 'go mod tidy'
 
-                stage('Lint Go Code') {
-                    steps {
-                        // Run golangci-lint on all Go files
-                        sh 'golangci-lint run'
-                    }
+                    parallel(
+                        'Run Fuzz Test': {
+                            // Run the fuzz test
+                            sh 'go test -fuzz=FuzzMarkdownRenderRaw -fuzztime=10s ./tests/fuzz/'
+                        },
+                        'Lint Go Code': {
+                            // Run golangci-lint on all Go files
+                            sh 'golangci-lint run'
+                        }
+                    )
                 }
             }
         }
 
+        // Stage for running Vitest tests
         stage('Vitest') {
             steps {
                 // Run vitest tests
@@ -44,6 +43,7 @@ pipeline {
             }
         }
 
+        // Parallel stage for building Go and NPM
         stage('Parallel Build') {
             parallel {
                 stage('NPM Install') {
@@ -57,7 +57,7 @@ pipeline {
                 stage('Go Build') {
                     steps {
                         script {
-                            //sh 'go mod tidy'
+                            // Go build after ensuring dependencies are tidy
                             sh 'go build -ldflags="-s -w" -o gitea'
                         }
                     }
@@ -74,6 +74,7 @@ pipeline {
             }
         }
 
+        // Archive the files into a tar.gz archive
         stage('Create TAR Archive') {
             steps {
                 script {
@@ -90,6 +91,7 @@ pipeline {
             }
         }
 
+        // Upload the archive to S3
         stage('Upload to S3') {
             steps {
                 script {
