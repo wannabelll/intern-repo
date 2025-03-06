@@ -7,7 +7,7 @@ pipeline {
         // Get the latest Git tag for versioning
         GIT_TAG = sh(script: "git describe --tags --abbrev=0", returnStdout: true).trim()
         GITHUB_TOKEN = credentials('jenkins-github-integration-demo.2025-03-06.private-key.pem') // Replace with your GitHub Token
-        GITHUB_REPO = 'https://github.com/wannabelll/intern-repo.git'  // Set your GitHub repository here
+        GITHUB_REPO = 'https://github.com/wannabelll/intern-repo.git'  // Set your GitHub repository her
         RELEASE_NAME = "Release-${GIT_TAG}"  // Customize your release name
         RELEASE_BODY = "Release for version ${GIT_TAG}"
         ASSET_TAR_GZ = "gitea-archive-${GIT_TAG}.tar.gz"  // Path to your .tar.gz file
