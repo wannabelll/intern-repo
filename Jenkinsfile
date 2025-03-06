@@ -14,8 +14,13 @@ pipeline {
 
     stages {
         stage('Run Tests') {
+          
             parallel {
                 stage('Run Fuzz Test') {
+                  script {
+                            sh 'go mod tidy'
+                        
+                        }
                     steps {
                         // Run the fuzz  test
                         sh 'go test -fuzz=FuzzMarkdownRenderRaw -fuzztime=10s ./tests/fuzz/'
@@ -52,7 +57,7 @@ pipeline {
                 stage('Go Build') {
                     steps {
                         script {
-                            sh 'go mod tidy'
+                            //sh 'go mod tidy'
                             sh 'go build -ldflags="-s -w" -o gitea'
                         }
                     }
