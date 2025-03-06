@@ -17,7 +17,7 @@ pipeline {
             parallel {
                 stage('Run Fuzz Test') {
                     steps {
-                        // Run the fuzz test
+                        // Run the fuzz  test
                         sh 'go test -fuzz=FuzzMarkdownRenderRaw -fuzztime=10s ./tests/fuzz/'
                     }
                 }
