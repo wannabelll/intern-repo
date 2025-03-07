@@ -73,7 +73,7 @@ pipeline {
             }
         }
 
-        // Create a GitHub release and upload the tar.gz file
+        // Create a GitHub release and upload  the tar.gz file
         stage('Create GitHub Release') {
             when { branch 'main' }
             steps {
