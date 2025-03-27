@@ -1,11 +1,10 @@
 # Build stage
-FROM docker.io/library/golang:1.23-alpine3.21 AS build-env
+FROM docker.io/library/golang:1.24-alpine3.21 AS build-env
 
 ARG GOPROXY
 ENV GOPROXY=${GOPROXY:-direct}
 
 ARG GITEA_VERSION
-ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS="bindata timetzdata $TAGS"
 ARG CGO_EXTRA_CFLAGS
 
