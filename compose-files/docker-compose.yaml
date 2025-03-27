@@ -1,0 +1,34 @@
+version: "3"
+
+networks:
+  gitea:
+    external: false
+
+services:
+  server:
+    image: wannabelll/gitea-alpine:latest
+    container_name: gitea
+    env_file:
+      - .env  # Reference the .env file here
+    restart: always
+    networks:
+      - gitea
+    volumes:
+      - ./gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3000:3000"
+      - "222:22"
+    depends_on:
+      - db
+
+  db:
+    image: docker.io/library/mysql:8
+    restart: always
+    env_file:
+      - .env  # Reference the .env file here
+    networks:
+      - gitea
+    volumes:
+      - ./mysql:/var/lib/mysql
