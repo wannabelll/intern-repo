@@ -1,0 +1,32 @@
+gitea:
+  replicaCount: 4
+  image: wannabelll/gitea-alpine:2.0.0
+  imagePullPolicy: Always
+  ingress:
+    enabled: true
+    host: gitea.demo2.ua
+  persistence:
+    enabled: true
+    size: 20Gi
+  dbPassword: "gitea"  # Merged the two gitea blocks
+  service:
+    httpPort: 3000
+    sshPort: 22
+    type: LoadBalancer
+mysql:
+  replicaCount: 1
+  image: mysql:8
+  imagePullPolicy: Always
+  persistence:
+    enabled: true
+    size: 5Gi
+  rootPassword: "gitea"
+  user: "gitea"
+  password: "gitea"
+  database: "gitea"  # Merged the two mysql blocks
+
+redis:
+  replicaCount: 1
+  image: redis:latest
+  imagePullPolicy: Always
+

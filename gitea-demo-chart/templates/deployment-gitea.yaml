@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.gitea.replicaCount }}
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w30 mysql 3306; do echo "waiting for mysql"; sleep 5; done;']
+      containers:
+      - name: gitea
+        image: {{ .Values.gitea.image }}
+        imagePullPolicy: {{ .Values.gitea.imagePullPolicy }}
+        ports:
+        - containerPort: 3000
+        - containerPort: 22
+        env:
+        - name: USER_UID
+          value: "1000"
+        - name: USER_GID
+          value: "1000"
+        - name: GITEA__database__DB_TYPE
+          value: "mysql"
+        - name: GITEA__metrics__ENABLED
+          value: "true"
+        - name: INSTALL_LOCK
+          value: "True"
+        - name: GITEA__database__HOST
+          value: "mysql:3306"
+        - name: GITEA__database__NAME
+          valueFrom:
+            secretKeyRef:
+              name: gitea-db-secret
+              key: MYSQL_DATABASE
+        - name: GITEA__database__USER
+          valueFrom:
+            secretKeyRef:
+              name: gitea-db-secret
+              key: MYSQL_USER
+        - name: GITEA__database__PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: gitea-db-secret
+              key: GITEA_DB_PASSWD
+        - name: GITEA__queue__TYPE
+          value: "redis"
+        - name: GITEA__queue__CONN_STR
+          value: "redis://redis:6379/0"
+        - name: GITEA__queue__LENGTH
+          value: "100000"
+        - name: GITEA__queue__BATCH_LENGTH
+          value: "20"
+        - name: GITEA__queue__MAX_WORKERS
+          value: "10"
+        volumeMounts:
+        - name: gitea-data
+          mountPath: /data
+      volumes:
+      - name: gitea-data
+        persistentVolumeClaim:
+          claimName: gitea-pvc
+
