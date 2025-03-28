@@ -1,0 +1,40 @@
+
+datadog:
+  site: datadoghq.eu  # EU Datadog site
+  clusterName: minikube
+  apiKeyExistingSecret: datadog-secret
+
+  # Kubelet configuration
+  kubelet:
+    tlsVerify: false  # Disable TLS verification, without this option agent may be failed
+
+  # Log collection
+  logs:
+    enabled: true
+    containerCollectAll: true
+
+  # Process monitoring
+  processAgent:
+    enabled: true
+
+  # Kube-state-metrics
+  kubeStateMetricsEnabled: true
+  kubeStateMetricsCore:
+    enabled: true
+
+  # Enable Datadog Gitea integration
+  checks:
+    gitea:
+      enabled: true  # Gitea integration
+      
+      # The URL should point to Gitea instance metrics endpoint
+      instances:
+        - prometheus_url: "http://gitea.demo2.ua/metrics" 
+          namespace: "default"
+          metrics:
+            - "gitea_*"
+
+clusterAgent:
+  enabled: true
+  replicas: 2  # High availability:)
+  createPodDisruptionBudget: true  # PDB for cluster agent
